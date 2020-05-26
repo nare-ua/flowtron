@@ -46,7 +46,8 @@ class FlowtronLoss(torch.nn.Module):
         z, log_s_list, gate_pred, mean, log_var, prob = model_output
 
         # create mask for outputs computed on padded data
-        mask = get_mask_from_lengths(lengths).transpose(0, 1)[..., None]
+        #mask = get_mask_from_lengths(lengths).transpose(0, 1)[..., None]
+        mask = get_mask_from_lengths(lengths).transpose(0, 1)[..., None].bool()
         mask_inverse = ~mask
         mask, mask_inverse = mask.float(), mask_inverse.float()
         n_mel_dims = z.size(2)
@@ -589,7 +590,8 @@ class Flowtron(torch.nn.Module):
             [text, speaker_vecs.expand(text.size(0), -1, -1)], 2)
         log_s_list = []
         attns_list = []
-        mask = ~get_mask_from_lengths(in_lens)[..., None]
+        #mask = ~get_mask_from_lengths(in_lens)[..., None]
+        mask = ~get_mask_from_lengths(in_lens)[..., None].bool()
         for i, flow in enumerate(self.flows):
             mel, log_s, gate, attn = flow(
                 mel, encoder_outputs, mask, out_lens)
