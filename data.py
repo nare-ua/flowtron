@@ -23,7 +23,7 @@ import random
 import numpy as np
 import torch
 import torch.utils.data
-#from scipy.io.wavfile import read
+from scipy.io.wavfile import read
 from audio_processing import TacotronSTFT
 from text import text_to_sequence, cmudict, _clean_text, get_arpabet
 import librosa
@@ -37,8 +37,8 @@ def load_filepaths_and_text(filename, split="|"):
 
 def load_wav_to_torch(full_path):
     """ Loads wavdata into torch array """
-    data, sampling_rate = librosa.core.load(full_path)
-    #sampling_rate, data = read(full_path)
+    #data, sampling_rate = librosa.core.load(full_path)
+    sampling_rate, data = read(full_path)
     return torch.from_numpy(data).float(), sampling_rate
 
 
