@@ -187,8 +187,13 @@ class STFT(torch.nn.Module):
                                    np.imag(fourier_basis[:cutoff, :])])
 
         forward_basis = torch.FloatTensor(fourier_basis[:, None, :])
-        inverse_basis = torch.FloatTensor(
-            np.linalg.pinv(scale * fourier_basis).T[:, None, :])
+        x = scale * fourier_basis
+        y = np.linalg.pinv(x).T[:, None, :]
+        y = np.squeeze(y)
+        z = torch.FloatTensor(y)
+        inverse_basis = torch.FloatTensor(y).clone()
+        #inverse_basis = torch.FloatTensor(
+        #    np.linalg.pinv(scale * fourier_basis).T[:, None, :])
 
         if window is not None:
             assert(win_length >= filter_length)
