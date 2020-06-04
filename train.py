@@ -77,7 +77,7 @@ def prepare_dataloaders(data_config, n_gpus, batch_size):
     return train_loader, valset, collate_fn
 
 
-def warmstart(checkpoint_path, model, include_layers=None):
+def warmstart(checkpoint_path, model, include_layers=[], ignore_layers=[]):
     print("Warm starting model", checkpoint_path)
     pretrained_dict = torch.load(checkpoint_path, map_location='cpu')
     if 'model' in pretrained_dict:
@@ -85,16 +85,17 @@ def warmstart(checkpoint_path, model, include_layers=None):
     else:
         pretrained_dict = pretrained_dict['state_dict']
 
-    if include_layers is not None:
-        pretrained_dict = {k: v for k, v in pretrained_dict.items()
-                           if any(l in k for l in include_layers)}
+    pretrained_dict = {k: v for k, v in pretrained_dict.items()
+                       if any(l in k for l in include_layers) \
+                       and not any(l in k for l in ignore_layers)}
 
     model_dict = model.state_dict()
     pretrained_dict = {k: v for k, v in pretrained_dict.items()
                        if k in model_dict}
 
-    if pretrained_dict['speaker_embedding.weight'].shape != model_dict['speaker_embedding.weight'].shape:
-        del pretrained_dict['speaker_embedding.weight']
+    if 'speaker_embedding.weight' not in ignore_layers:
+      if pretrained_dict['speaker_embedding.weight'].shape != model_dict['speaker_embedding.weight'].shape:
+          del pretrained_dict['speaker_embedding.weight']
 
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
@@ -103,7 +104,9 @@ def warmstart(checkpoint_path, model, include_layers=None):
 
 def load_checkpoint(checkpoint_path, model, optimizer, ignore_layers=[]):
     assert os.path.isfile(checkpoint_path)
+    print("checkpoint_path=", checkpoint_path)
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+    print(checkpoint_dict.keys())
     iteration = checkpoint_dict['iteration']
     model_dict = checkpoint_dict['model'].state_dict()
 
@@ -185,7 +188,7 @@ def train(n_gpus, rank, output_directory, epochs, learning_rate, weight_decay,
     if warmstart_checkpoint_path != "":
         model = warmstart(warmstart_checkpoint_path, model, include_layers)
 
-    if checkpoint_path != "":
+    elif checkpoint_path != "":
         model, optimizer, iteration = load_checkpoint(checkpoint_path, model,
                                                       optimizer, ignore_layers)
         iteration += 1  # next iteration is iteration + 1
